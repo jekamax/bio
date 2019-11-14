@@ -3,25 +3,27 @@ import pickle
 import unidecode
 import os, shutil
 
-fh = open("jaspar/homosapiens_810_jaspar.txt")
+filename = 'jaspar_homosapiens'
+
+fh = open(f"{filename}.txt")
 all_motifs = motifs.parse(fh, "jaspar").to_dict()
 
-metafile = open('metadata.dat', 'rb')
+metafile = open(f'{filename}_metadata.dat', 'rb')
 metadata = pickle.load(metafile)
-respath = "result"
+respath = f"converted/{filename}_ugene"
 shutil.rmtree(respath, ignore_errors=True)
 
 for name in all_motifs:
     mt = metadata[name]
-    # fix UGENE unicode impotence
+    # fix UGENE unicode impotence and jaspar special characters in values
     for key in mt:
         if isinstance(mt[key], str):
-            mt[key] = unidecode.unidecode(mt[key])
+            mt[key] = unidecode.unidecode(mt[key]).replace(";", ",")
         elif isinstance(mt[key], list):
             l = mt[key]
             for i in range(len(l)):
                 if isinstance(l[i], str):
-                    l[i] = unidecode.unidecode(l[i])
+                    l[i] = unidecode.unidecode(l[i]).replace(";", ",")
 
     termnames = ['family', 'class', 'flat']
     for termname in termnames:
