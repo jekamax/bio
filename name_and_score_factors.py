@@ -1,7 +1,7 @@
 from Bio import SeqIO
 from Bio.Alphabet import generic_dna
 
-filename = 'oct1-regions-annotated'
+filename = 'oct1-regions-both-strands'
 
 
 def renameFeature(feature):
