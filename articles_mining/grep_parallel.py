@@ -2,6 +2,7 @@ import csv
 import glob
 import re
 import types
+from types import SimpleNamespace
 import sys
 import signal
 from multiprocessing import Pool
@@ -36,7 +37,7 @@ def search_flat(job):
         file = load_file(filename)
         global_files[filename] = file
 
-    result = types.SimpleNamespace()
+    result = SimpleNamespace()
     result.link = file.link
     result.article_title = file.article_title
     result.found_lines = []
@@ -64,7 +65,7 @@ def search_flat(job):
 def make_pattern(name):
     if name.lower() == 'oct1' or name.lower() == 'pou2f1':
         return None
-    gene = types.SimpleNamespace()
+    gene = SimpleNamespace()
     gene.name = name
     nameholder = fr'[^a-z]{name.lower()}[^a-z]'
     gene.pattern = re.compile(nameholder)
@@ -80,7 +81,7 @@ def check_cancer(text):
     return False
 
 def load_file(filename):
-    file = types.SimpleNamespace()
+    file = SimpleNamespace()
     file.name = filename
     file.bad=False
     doc = ET.parse(filename)
@@ -117,7 +118,8 @@ def load_file(filename):
 
     content=abstract
     body_element=xml_doc.find('.//body')
-    content += ET.tostring(element, encoding='utf-8',method='text').decode("utf-8")
+    if body_element:
+        content += ET.tostring(body_element, encoding='utf-8',method='text').decode("utf-8")
     
     lines = content.split('\n')
     result = []
@@ -133,9 +135,9 @@ def load_file(filename):
     return file
 
 
-def read_gene_names():
+def read_gene_names(filename):
     names = []
-    with open('protein-coding_gene.txt', newline='') as csvfile:
+    with open(filename, newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter='\t')
         for row in reader:
             name = row['symbol']
@@ -143,45 +145,68 @@ def read_gene_names():
     return names
 
 
-if __name__ == '__main__':
-
+def grep(namesfilename,result_filename, summary_filename):
     files = list(glob.iglob('full_text/**/*.xml', recursive=True))
     
     goods=filter_good(files)
     print(f"Good files: {len(goods)} of {len(files)}")
     files=goods
 
-    f = open("results.csv", "w", encoding='utf-8', buffering=1)
+    f = open(result_filename, 'w', encoding='utf-8', buffering=1)
 
     def pr(st):
         print(st)
         f.write(st+'\n')
 
-    names = read_gene_names()
+    names = read_gene_names(namesfilename)
     print(f'Names: {len(names)}')
 
     try:
+        summary=[]
         pool = Pool(initializer=init_worker)
         pr('Gene name\tArticle number\tPhrase\tArticle Title\tLink')
         for name in names:
             jobs = []
             for file in files:
-                job = types.SimpleNamespace()
+                job = SimpleNamespace()
                 job.filename = file
                 job.genename = name
                 jobs.append(job)
             # worker_results=[]
             # for job in jobs:
             #    worker_results.append(search_flat(job))
+
             worker_results = pool.map(search_flat, jobs)
-            article_counter = 1
-            for worker_result in worker_results:
-                if len(worker_result.found_lines) > 0:
-                    for line in worker_result.found_lines:
-                        pr(f'{name}\t{article_counter}\t{line}\t{worker_result.article_title}\t{worker_result.link}')
-                    article_counter += 1
+            
+            worker_results=list(filter(lambda res: len(res.found_lines)>0,worker_results))
+            
+            if len(worker_results)>0:
+                geneitem=SimpleNamespace()
+                geneitem.name=name
+                geneitem.worker_results=worker_results
+                summary.append(geneitem)
+
+            for article_counter,worker_result in enumerate(worker_results):
+                for line in worker_result.found_lines:
+                    pr(f'{name}\t{article_counter+1}\t{line}\t{worker_result.article_title}\t{worker_result.link}')
         pool.close()
         pool.join()
+
+        summary.sort(key=lambda item: len(item.worker_results), reverse=True)
+        with open(summary_filename,'w', encoding='utf-8') as sumfile:
+            sumfile.write('Gene No\tGene\tTotal Articles\tArticle No\tTitle\tLink\tContent\n')
+            for gene_no, geneitem in enumerate(summary):
+                gene_name=geneitem.name
+                total_articles=len(geneitem.worker_results)
+                print(f'{gene_name}: {total_articles}')
+                for article_no, worker_result in enumerate(geneitem.worker_results):
+                    content=". ".join(worker_result.found_lines)
+                    sumfile.write(f'{gene_no+1}\t{gene_name}\t{total_articles}\t{article_no+1}')
+                    sumfile.write(f'\t{worker_result.article_title}\t{worker_result.link}\t{content}\n')
+                    
+        
+
+
     except KeyboardInterrupt:
         print("Caught KeyboardInterrupt, terminating workers")
         pool.terminate()

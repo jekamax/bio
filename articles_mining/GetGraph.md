@@ -1,3 +1,12 @@
+#TODO
+
+* Названия: OCT1, OCT 1, OCT-1, POU2F1, OTF. Есть еще написание OCT1/POU2F1. Точно взаимодействует с: SOX9 (или sox2,это  большое семейство), oct2, hoxd9 (или 10), brca1, blacap, per2
+* Слова про рак: cancer, carcinoma, tumor, sarcoma, melanoma, lymphoma, myeloma, neuroblastoma, neurofibroma, teratoma, adenoma, meningioma, malignansy, malignant transformation/growth/tumor (короче, malignant что угодно), neoplasm, metastasis, leucemia, leucosis
+* Отфильтровать, чтобы в выборку попадали только статьи, где в названии есть слова про канцер
+* Сделать фильтр, чтобы смотреть какой ген упомянут в большом разных кол-ве статей
+
+#Steps
+
 ##Download human genes
 
 ````
