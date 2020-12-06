@@ -3,14 +3,16 @@ from Bio.Alphabet import generic_dna
 
 filename = 'oct1-regions-both-strands'
 
+name_by='name'
+group_by='family'
 
 def renameFeature(feature):
     fq = feature.qualifiers
-    name = fq.get('name', 'unknown_name')
-    family = fq.get('family', 'unknown_family')
-    # fq['comment']=fq.get('comment','no_comment').replace('\n','-')
+    name = fq.get(name_by, 'unknown_'+name_by)
+    group = fq.get(group_by, 'unknown_'+group_by)
+    #fq['comment']=fq.get('comment','no_comment').replace('\n','-')
     fq['ugene_name'] = name
-    fq['ugene_group'] = family
+    fq['ugene_group'] = group
 
 
 def calcAndWriteScore(part):
@@ -35,4 +37,4 @@ for part in parts:
         renameFeature(f)
     calcAndWriteScore(part)
 
-SeqIO.write(out_parts, f'{filename}-named.gb', 'genbank')
+SeqIO.write(out_parts, f'{filename}-named-by-{name_by}.gb', 'genbank')

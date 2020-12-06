@@ -1,4 +1,5 @@
-venv/
+**/venv/
 .idea/
+.vscode/
 transcription_factors_regions/jaspar/converted/
 articles_mining/full_text/

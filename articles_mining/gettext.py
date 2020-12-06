@@ -16,6 +16,12 @@ def load_file(filename):
     print(file.link)
 
     
+    
+    for element in xml_doc.iter():
+        element.tag=element.tag.split("}")[1]
+    
+    title=xml_doc.findtext(".//article-meta//article-title")
+    print(f"---title: {title}")
     elements=xml_doc.findall('.//*')
     for element in elements:
         if(element.tag.endswith('article-meta')):
